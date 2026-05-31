@@ -9,6 +9,7 @@ import PromptCardGrid from '../components/modules/PromptCardGrid'
 import LiveDemoSteps from '../components/modules/LiveDemoSteps'
 import HandsOnTask from '../components/modules/HandsOnTask'
 import BeforeAfterSlider from '../components/modules/BeforeAfterSlider'
+import VideoSection from '../components/modules/VideoSection'
 
 export default function ModulePage() {
   const { moduleId } = useParams()
@@ -43,6 +44,9 @@ export default function ModulePage() {
     <div className="animate-enter">
       {/* Overview */}
       <OverviewCard module={module} />
+
+      {/* Video Section */}
+      <VideoSection videos={module.videos} />
 
       {/* Core Concepts */}
       <ConceptList concepts={module.concepts} />

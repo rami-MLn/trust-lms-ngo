@@ -7,8 +7,8 @@ dist/
 # Vercel
 .vercel/
 
-# Local data
-data/
+# Local data (server JSON database — NOT src/data source files)
+/data/
 
 # Environment
 .env
