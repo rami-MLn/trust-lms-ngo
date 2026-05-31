@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":3000\")",
+      "Bash(taskkill /PID 32120 /F)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3000,5173 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; Write-Host \"Done killing port processes\")",
+      "mcp__Claude_in_Chrome__list_connected_browsers",
+      "mcp__Claude_in_Chrome__select_browser",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__navigate",
+      "Bash(vercel whoami *)",
+      "Bash(vercel --yes --name trust-lms-ngo --prod)",
+      "mcp__Claude_in_Chrome__tabs_create_mcp",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}
