@@ -118,14 +118,14 @@ export const MODULES = {
     ],
     videos: [
       {
-        title: 'شرح Prompt Engineering للمبتدئين بالعربي',
-        url: 'https://www.youtube.com/results?search_query=شرح+prompt+engineering+للمبتدئين+بالعربي',
-        description: 'أساسيات كتابة الأوامر الاحترافية للذكاء الاصطناعي من الصفر',
+        title: 'تعلم مهارة كتابة الأوامر للذكاء الاصطناعي | Prompt Engineering',
+        url: 'https://www.youtube.com/watch?v=Q1Sh00SGdvI',
+        description: 'شرح مبسط لمهارة Prompt Engineering وكيفية كتابة أوامر فعّالة لنماذج الذكاء الاصطناعي',
       },
       {
-        title: 'ChatGPT وGemini في بيئة العمل المؤسسي',
-        url: 'https://www.youtube.com/results?search_query=ChatGPT+Gemini+للعمل+المؤسسي+الإنتاجية+عربي',
-        description: 'كيف تحوّل الذكاء الاصطناعي إلى شريك إنتاجي في عملك اليومي',
+        title: 'هندسة الأوامر Prompt Engineering من الصفر إلى الاحتراف',
+        url: 'https://www.youtube.com/watch?v=_Nhx4mAhrkw',
+        description: 'دورة شاملة عن هندسة الأوامر تغطي نماذج الذكاء الاصطناعي التوليدي',
       },
     ],
     task: {
@@ -198,14 +198,14 @@ export const MODULES = {
     ],
     videos: [
       {
-        title: 'تحويل الصوت إلى نص بالذكاء الاصطناعي',
-        url: 'https://www.youtube.com/results?search_query=تحويل+الصوت+إلى+نص+ذكاء+اصطناعي+عربي',
-        description: 'أدوات وتقنيات تحويل الملاحظات الصوتية إلى نصوص احترافية',
+        title: 'تحويل الصوت إلى نص بالذكاء الاصطناعي مجاناً',
+        url: 'https://www.youtube.com/watch?v=eRwC6WqBlEs',
+        description: 'شرح عملي لتحويل الصوت والفيديو إلى نص مكتوب بالذكاء الاصطناعي مع دعم اللغة العربية',
       },
       {
-        title: 'وضع الصوت في ChatGPT - شرح بالعربي',
-        url: 'https://www.youtube.com/results?search_query=ChatGPT+voice+mode+وضع+الصوت+شرح+عربي',
-        description: 'كيف تستخدم ميزة الصوت في ChatGPT للإملاء والإنتاجية',
+        title: 'حوّل الفيديو أو الصوت إلى نص | Turboscribe',
+        url: 'https://www.youtube.com/watch?v=QzBBFm07kmc',
+        description: 'شرح TurboScribe لتحويل أي ملف صوتي أو مقطع فيديو إلى نص مكتوب بدقة عالية',
       },
     ],
     task: {
@@ -271,14 +271,14 @@ export const MODULES = {
     ],
     videos: [
       {
-        title: 'أتمتة محاضر الاجتماعات بالذكاء الاصطناعي',
-        url: 'https://www.youtube.com/results?search_query=أتمتة+اجتماعات+ذكاء+اصطناعي+تلخيص+تلقائي+عربي',
-        description: 'كيف تلخص الاجتماعات تلقائياً وتستخرج القرارات والمهام',
+        title: 'read.ai — تطبيق يلخص الاجتماعات بالذكاء الاصطناعي',
+        url: 'https://www.youtube.com/watch?v=pEy1mWLTl3s',
+        description: 'شرح تطبيق read.ai لتلخيص الاجتماعات واستخراج أهم النقاط والمهام تلقائياً',
       },
       {
-        title: 'شرح Microsoft Teams Copilot بالعربي',
-        url: 'https://www.youtube.com/results?search_query=Microsoft+Teams+Copilot+شرح+بالعربي+اجتماعات',
-        description: 'استخدام Copilot في Teams لتلخيص الاجتماعات وتوزيع المهام',
+        title: 'شرح كامل لـ Microsoft Copilot وأفضل طرق الاستفادة منه',
+        url: 'https://www.youtube.com/watch?v=xHj-7H0pLyo',
+        description: 'شرح Microsoft Copilot وكيفية الاستفادة منه في Teams لتلخيص الاجتماعات',
       },
     ],
     task: {
@@ -336,14 +336,14 @@ export const MODULES = {
     prompts: [],
     videos: [
       {
-        title: 'شرح Google Drive الكامل للمبتدئين',
-        url: 'https://www.youtube.com/results?search_query=Google+Drive+شرح+كامل+للمبتدئين+بالعربي+2024',
-        description: 'تنظيم الملفات وإدارة الصلاحيات والعمل التعاوني في Google Drive',
+        title: 'شرح استخدام Google Drive بالعربي — الدليل الشامل',
+        url: 'https://www.youtube.com/watch?v=yTBalfNUZ9k',
+        description: 'شرح شامل لاستخدام Google Drive بالعربي يغطي رفع الملفات والتنظيم والمشاركة مع الفريق',
       },
       {
-        title: 'العمل الجماعي في Microsoft 365 و OneDrive',
-        url: 'https://www.youtube.com/results?search_query=OneDrive+Microsoft+365+العمل+الجماعي+شرح+عربي',
-        description: 'كيف تشارك الملفات وتتعاون مع الفريق باستخدام OneDrive',
+        title: 'شرح استخدام OneDrive | الأساسيات',
+        url: 'https://www.youtube.com/watch?v=iKPGJ8XuXFA',
+        description: 'سلسلة تعليمية لاستخدام OneDrive من Microsoft تشمل التخزين السحابي والتعاون على الملفات',
       },
     ],
     task: {
@@ -401,14 +401,14 @@ export const MODULES = {
     prompts: [],
     videos: [
       {
-        title: 'Notion للمبتدئين - الدليل الشامل بالعربي',
-        url: 'https://www.youtube.com/results?search_query=Notion+للمبتدئين+شرح+شامل+قواعد+بيانات+بالعربي',
-        description: 'كيف تبني قواعد بيانات وتقارير مرنة في Notion',
+        title: 'Notion | شرح قواعد البيانات وطرق العرض المختلفة بالعربي',
+        url: 'https://www.youtube.com/watch?v=n2uBSVtuHfQ',
+        description: 'شرح تفصيلي لقواعد البيانات في Notion بالعربي مع تطبيق عملي للمبتدئين',
       },
       {
-        title: 'Airtable لإدارة بيانات المنظمات',
-        url: 'https://www.youtube.com/results?search_query=Airtable+قاعدة+بيانات+للمنظمات+شرح+بالعربي',
-        description: 'بناء قواعد بيانات تفاعلية لتتبع المستفيدين والمشاريع',
+        title: 'Airtable — شرح المنصة وطريقة الاستخدام بالعربي',
+        url: 'https://www.youtube.com/watch?v=WCzFLfHZ-Tw',
+        description: 'شرح منصة Airtable بالعربي وكيفية استخدامها لإدارة قواعد البيانات للمنظمات',
       },
     ],
     task: {
@@ -466,14 +466,14 @@ export const MODULES = {
     prompts: [],
     videos: [
       {
-        title: 'شرح Google Photos - التنظيم والأرشفة',
-        url: 'https://www.youtube.com/results?search_query=Google+Photos+شرح+كامل+التنظيم+والأرشفة+بالعربي',
-        description: 'كيف تنظم وتشارك وتبحث في مكتبة الصور المؤسسية',
+        title: 'شرح Google Photos للمبتدئين — تنظيم ونسخ احتياطي',
+        url: 'https://www.youtube.com/watch?v=UTMMlVP_YpA',
+        description: 'دليل شامل عن Google Photos يشرح كيفية تنظيم الصور والنسخ الاحتياطي والاسترجاع',
       },
       {
-        title: 'أرشفة الصور الميدانية باحترافية',
-        url: 'https://www.youtube.com/results?search_query=أرشفة+وتنظيم+الصور+المؤسسية+الميدانية+بالعربي',
-        description: 'نظام احترافي لأرشفة الصور وحماية الذاكرة المؤسسية',
+        title: 'كيفية رفع الصور إلى Google Photos خطوة بخطوة',
+        url: 'https://www.youtube.com/watch?v=M7yPqa6iloU',
+        description: 'شرح عملي لرفع الصور والفيديوهات إلى Google Photos وإعداد النسخ الاحتياطي التلقائي',
       },
     ],
     task: {
@@ -539,14 +539,14 @@ export const MODULES = {
     prompts: [],
     videos: [
       {
-        title: 'التصوير الاحترافي بالهاتف للمبتدئين',
-        url: 'https://www.youtube.com/results?search_query=التصوير+الاحترافي+بالهاتف+للمبتدئين+شرح+عربي',
-        description: 'قواعد وأسرار التصوير الاحترافي بالسمارتفون',
+        title: 'أساسيات التصوير بالهاتف | احترف التصوير بالجوال',
+        url: 'https://www.youtube.com/watch?v=-ahUREbAvlQ',
+        description: 'شرح أساسيات التصوير الفوتوغرافي بالهاتف للمبتدئين مع الإعدادات والتقنيات الأساسية',
       },
       {
-        title: 'توثيق الأنشطة الميدانية بالهاتف',
-        url: 'https://www.youtube.com/results?search_query=تصوير+ميداني+احترافي+بالهاتف+تقنيات+عربي',
-        description: 'كيف توثق الأنشطة الإنسانية بصور وفيديوهات مؤثرة',
+        title: 'إحترف التصوير بكاميرا الهاتف | 10 نصائح للتصوير بالجوال',
+        url: 'https://www.youtube.com/watch?v=0A0FXuVSO3Y',
+        description: 'عشر نصائح عملية لتصوير احترافي بكاميرا الهاتف تشمل الإضاءة والتأطير والإعدادات',
       },
     ],
     task: {
@@ -612,14 +612,14 @@ export const MODULES = {
     ],
     videos: [
       {
-        title: 'Canva للمبتدئين - الدليل الشامل بالعربي',
-        url: 'https://www.youtube.com/results?search_query=Canva+للمبتدئين+شرح+كامل+تصميم+بالعربي+2024',
-        description: 'تصميم منشورات وبروشورات احترافية بدون خبرة مسبقة',
+        title: 'شرح Canva كامل بالتفصيل بالعربي للمبتدئين 2026',
+        url: 'https://www.youtube.com/watch?v=WivLDi9Yxd4',
+        description: 'شرح كامل لبرنامج Canva بالعربي للمبتدئين يغطي التصميم وسوشيال ميديا',
       },
       {
-        title: 'تصميم بروشور مؤسسي احترافي في Canva',
-        url: 'https://www.youtube.com/results?search_query=تصميم+بروشور+احترافي+Canva+عربي+للمنظمات',
-        description: 'خطوات عملية لتصميم بروشور يعكس هوية مؤسستك البصرية',
+        title: 'كيفية إنشاء بروشور على تطبيق كانفا Canva',
+        url: 'https://www.youtube.com/watch?v=FJmzvIctoF0',
+        description: 'شرح متخصص لإنشاء بروشور احترافي على Canva خطوة بخطوة مع تطبيق عملي',
       },
     ],
     task: {
@@ -685,14 +685,14 @@ export const MODULES = {
     ],
     videos: [
       {
-        title: 'شرح Gamma لإنشاء عروض بالذكاء الاصطناعي',
-        url: 'https://www.youtube.com/results?search_query=Gamma+app+شرح+بالعربي+عروض+تقديمية+ذكاء+اصطناعي',
-        description: 'أنشئ عروضاً تقديمية احترافية في ثوانٍ باستخدام Gamma',
+        title: 'إنشاء عرض تقديمي احترافي بالذكاء الاصطناعي | Gamma.app',
+        url: 'https://www.youtube.com/watch?v=wDbwUtu8GC8',
+        description: 'شرح شامل خطوة بخطوة لاستخدام Gamma.app لإنشاء عروض تقديمية احترافية بالذكاء الاصطناعي',
       },
       {
-        title: 'عروض تقديمية مقنعة للمانحين',
-        url: 'https://www.youtube.com/results?search_query=عروض+تقديمية+احترافية+للمانحين+ذكاء+اصطناعي+عربي',
-        description: 'أسرار صناعة عروض تجذب التمويل وتقنع الجهات المانحة',
+        title: 'شرح Gamma AI | عرض تقديمي احترافي في دقيقتين',
+        url: 'https://www.youtube.com/watch?v=iPpaw6DmFbA',
+        description: 'شرح سريع وعملي لأداة Gamma AI وكيفية إنشاء Presentation احترافي في دقيقتين',
       },
     ],
     task: {
@@ -750,14 +750,14 @@ export const MODULES = {
     prompts: [],
     videos: [
       {
-        title: 'صور وفيديوهات مجانية بدون حقوق - Pexels وبدائلها',
-        url: 'https://www.youtube.com/results?search_query=Pexels+صور+فيديو+مجاني+بدون+حقوق+نشر+عربي',
-        description: 'كيف تجد وتنزل وسائط مرئية قانونية وآمنة للاستخدام',
+        title: 'شرح Pexels — تحميل صور وفيديوهات بدون حقوق النشر',
+        url: 'https://www.youtube.com/watch?v=dBrurqyWCuA',
+        description: 'شرح موقع Pexels وكيفية تحميل الصور والفيديوهات المجانية بدون حقوق نشر',
       },
       {
-        title: 'شرح تراخيص Creative Commons بالعربي',
-        url: 'https://www.youtube.com/results?search_query=Creative+Commons+تراخيص+حقوق+النشر+شرح+عربي',
-        description: 'فهم حقوق النشر وكيفية الاستخدام القانوني للمحتوى الرقمي',
+        title: 'أفضل 3 مواقع فيديوهات مجانية بدون حقوق | Pexels – Pixabay – Mixkit',
+        url: 'https://www.youtube.com/watch?v=gZ-G9HMxTJk',
+        description: 'مقارنة بين أفضل المواقع للصور والفيديوهات المجانية بدون حقوق ملكية',
       },
     ],
     task: {
@@ -823,14 +823,14 @@ export const MODULES = {
     ],
     videos: [
       {
-        title: 'شرح Meta Business Suite للمنظمات',
-        url: 'https://www.youtube.com/results?search_query=Meta+Business+Suite+شرح+بالعربي+إدارة+حسابات+2024',
-        description: 'إدارة فيسبوك وإنستغرام من منصة واحدة باحترافية',
+        title: 'شرح Meta Business Suite وإدارة صفحات فيسبوك',
+        url: 'https://www.youtube.com/watch?v=8dKErOfxJrU',
+        description: 'شرح شامل لـ Meta Business Suite وكيفية إدارة فيسبوك وإنستغرام من لوحة تحكم واحدة',
       },
       {
-        title: 'LinkedIn للمنظمات غير الربحية بالعربي',
-        url: 'https://www.youtube.com/results?search_query=LinkedIn+للمنظمات+غير+الربحية+استقطاب+مانحين+عربي',
-        description: 'كيف تبني حضوراً مؤسسياً قوياً يستقطب الشركاء والممولين',
+        title: 'شرح LinkedIn من الصفر حتى الاحترافية 2026',
+        url: 'https://www.youtube.com/watch?v=JPq9rf3qVN8',
+        description: 'دليل شامل لاستخدام LinkedIn للأفراد والمنظمات — بناء الصفحة والتواصل ونشر المحتوى',
       },
     ],
     task: {
@@ -896,14 +896,14 @@ export const MODULES = {
     ],
     videos: [
       {
-        title: 'شرح CapCut Desktop للكمبيوتر بالعربي',
-        url: 'https://www.youtube.com/results?search_query=CapCut+Desktop+شرح+بالعربي+مونتاج+كمبيوتر+2024',
-        description: 'تعلم المونتاج الاحترافي على CapCut خطوة بخطوة',
+        title: 'تعلم CapCut — أقوى برنامج مونتاج مجاني للكمبيوتر',
+        url: 'https://www.youtube.com/watch?v=XWGltC-d4l4',
+        description: 'شرح مفصل لبرنامج CapCut للكمبيوتر للمبتدئين يغطي الأدوات الأساسية للمونتاج',
       },
       {
-        title: 'مونتاج فيديوهات الريلز الإنسانية',
-        url: 'https://www.youtube.com/results?search_query=مونتاج+فيديو+ريلز+احترافي+للمبتدئين+بالعربي',
-        description: 'أسرار صناعة فيديوهات الريلز المؤثرة للمنظمات',
+        title: 'شرح شامل لبرنامج CapCut Desktop 2025 من الصفر',
+        url: 'https://www.youtube.com/watch?v=b7urv3w7rks',
+        description: 'شرح كامل لـ CapCut 2025 يغطي جميع أدوات المونتاج والمؤثرات والتصدير',
       },
     ],
     task: {
@@ -976,14 +976,14 @@ export const MODULES = {
     ],
     videos: [
       {
-        title: 'جدولة المنشورات مع Buffer و Publer',
-        url: 'https://www.youtube.com/results?search_query=Buffer+Publer+جدولة+منشورات+التواصل+الاجتماعي+عربي',
-        description: 'إدارة جميع حسابات التواصل الاجتماعي من مكان واحد',
+        title: 'Buffer شرح كامل للمبتدئين | أداة جدولة السوشال ميديا',
+        url: 'https://www.youtube.com/watch?v=wBHL7Y5uOcc',
+        description: 'شرح كامل لأداة Buffer لجدولة المحتوى على وسائل التواصل الاجتماعي خطوة بخطوة',
       },
       {
-        title: 'تحسين ملف LinkedIn للموظفين المؤسسيين',
-        url: 'https://www.youtube.com/results?search_query=تحسين+ملف+LinkedIn+الشخصي+للمنظمات+والشركات+عربي',
-        description: 'حوّل ملفك الشخصي على LinkedIn إلى أداة جذب للشراكات',
+        title: 'تطبيق Publer — المفضل للمسوقين عبر التواصل الاجتماعي',
+        url: 'https://www.youtube.com/watch?v=MZ1jfnHYPD8',
+        description: 'شرح Publer لجدولة وإدارة منشورات جميع المنصات بما فيها LinkedIn وفيسبوك وإنستغرام',
       },
     ],
     task: {
