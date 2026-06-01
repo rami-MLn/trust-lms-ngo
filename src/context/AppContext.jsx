@@ -6,6 +6,7 @@ const AppContext = createContext(null)
 const STORAGE_KEY = 'trust_lms_user'
 const PROGRESS_KEY = 'trust_lms_progress'
 const SUBMISSIONS_KEY = 'trust_lms_submissions'
+const REGISTRY_KEY = 'trust_lms_registry'
 
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -60,6 +61,25 @@ export function AppProvider({ children }) {
 
     setUser(newUser)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser))
+
+    // Update shared registry (for admin dashboard)
+    try {
+      const registry = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]')
+      const existingIdx = registry.findIndex(
+        u => u.name === newUser.name && u.department === newUser.department
+      )
+      if (existingIdx === -1) {
+        registry.push({ ...newUser, progress: {}, lastActive: new Date().toISOString() })
+      } else {
+        registry[existingIdx] = {
+          ...registry[existingIdx],
+          id: newUser.id,
+          lastActive: new Date().toISOString(),
+        }
+      }
+      localStorage.setItem(REGISTRY_KEY, JSON.stringify(registry))
+    } catch { /* ignore */ }
+
     return newUser
   }, [])
 
@@ -72,6 +92,17 @@ export function AppProvider({ children }) {
     const updated = { ...progress, [moduleId]: status }
     setProgress(updated)
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(updated))
+
+    // Update registry
+    try {
+      const registry = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]')
+      const idx = registry.findIndex(u => u.id === user?.id)
+      if (idx !== -1) {
+        registry[idx].progress = { ...registry[idx].progress, [moduleId]: status }
+        registry[idx].lastActive = new Date().toISOString()
+        localStorage.setItem(REGISTRY_KEY, JSON.stringify(registry))
+      }
+    } catch { /* ignore */ }
 
     if (user?.id) {
       try {
@@ -138,6 +169,12 @@ export function AppProvider({ children }) {
     return !!(submissions[moduleId]?.length)
   }, [submissions])
 
+  const getRegistry = useCallback(() => {
+    try {
+      return JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]')
+    } catch { return [] }
+  }, [])
+
   return (
     <AppContext.Provider value={{
       user,
@@ -153,6 +190,7 @@ export function AppProvider({ children }) {
       getCompletedCount,
       getCompletionPercentage,
       hasSubmission,
+      getRegistry,
       setSidebarOpen,
     }}>
       {children}

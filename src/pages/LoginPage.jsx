@@ -113,7 +113,7 @@ export default function LoginPage() {
           {/* Info */}
           <div className="mt-6 pt-5 border-t border-gray-100">
             <p className="text-xs text-gray-400 text-center leading-relaxed">
-              هذه المنصة مخصصة لموظفي ومتطوعي مؤسسة TRUST فقط.
+              هذه المنصة مخصصة لموظفي ومتطوعي مؤسسة برامج الطفولة والعمل الجماهيري وشركاؤهم فقط.
               <br />
               لا حاجة لكلمة مرور — يكفي اسمك وقسمك للبدء.
             </p>

@@ -5,7 +5,7 @@ import { getPhaseForModule } from '../../data/modules'
 
 const STATUS_CONFIG = {
   completed:   { label: 'مكتمل', icon: CheckCircle, className: 'status-completed' },
-  in_progress: { label: 'قيد التنفيذ', icon: Clock, className: 'status-in-progress' },
+  in_progress: { label: 'قيد التعلم', icon: Clock, className: 'status-in-progress' },
   not_started: { label: 'لم يبدأ', icon: BookOpen, className: 'status-not-started' },
 }
 

@@ -1,8 +1,9 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle, Clock, Circle, ArrowLeft } from 'lucide-react'
+import { CheckCircle, Clock, Circle, ArrowLeft, Sparkles } from 'lucide-react'
 import { PHASES, getModulesByPhase, MODULES_LIST } from '../data/modules'
 import { useApp } from '../context/AppContext'
+import { getDepartmentConfig } from '../data/departments'
 
 const PHASE_GRADIENTS = {
   1: 'from-trust-700 to-trust-500',
@@ -17,7 +18,7 @@ function StatusDot({ status }) {
   return <Circle size={16} className="text-gray-300" />
 }
 
-function PhaseCard({ phase }) {
+function PhaseCard({ phase, recommendedModules }) {
   const navigate = useNavigate()
   const { getModuleStatus } = useApp()
   const modules = getModulesByPhase(phase.id)
@@ -56,16 +57,25 @@ function PhaseCard({ phase }) {
       <div className="space-y-2">
         {modules.map(module => {
           const status = getModuleStatus(module.id)
+          const isRecommended = recommendedModules?.includes(module.id)
           return (
             <button
               key={module.id}
               onClick={() => navigate(`/module/${module.id}`)}
-              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-trust-50 transition-colors text-right group"
+              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-right group
+                ${isRecommended ? 'bg-amber-50 hover:bg-amber-100 border border-amber-200' : 'hover:bg-trust-50'}`}
             >
               <StatusDot status={status} />
-              <span className="flex-1 text-sm font-medium text-gray-700 group-hover:text-trust-700 transition-colors">
+              <span className={`flex-1 text-sm font-medium transition-colors
+                ${isRecommended ? 'text-amber-800 group-hover:text-amber-900' : 'text-gray-700 group-hover:text-trust-700'}`}>
                 {module.order}. {module.title}
               </span>
+              {isRecommended && (
+                <span className="text-[10px] bg-amber-400 text-white font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                  <Sparkles size={9} />
+                  لقسمك
+                </span>
+              )}
               <ArrowLeft size={14} className="text-gray-300 group-hover:text-trust-500 transition-colors rotate-180" />
             </button>
           )
@@ -80,12 +90,34 @@ export default function DashboardPage() {
   const { user, getCompletionPercentage, getCompletedCount, getModuleStatus } = useApp()
   const pct = getCompletionPercentage()
   const completed = getCompletedCount()
+  const deptConfig = getDepartmentConfig(user?.department)
 
   // Find next incomplete module
   const nextModule = MODULES_LIST.find(m => getModuleStatus(m.id) !== 'completed')
+  // Find the department's recommended start module if not yet started
+  const startModule = MODULES_LIST.find(m => m.id === deptConfig.startModuleId)
+  const startModuleStatus = startModule ? getModuleStatus(startModule.id) : 'completed'
 
   return (
     <div className="animate-enter space-y-6">
+      {/* Personalized dept greeting banner */}
+      {startModuleStatus === 'not_started' && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
+          <span className="text-2xl mt-0.5">✨</span>
+          <div>
+            <p className="font-bold text-amber-800 text-sm leading-snug">
+              {deptConfig.greeting}، {deptConfig.startSuggestion}
+            </p>
+            <button
+              onClick={() => navigate(`/module/${deptConfig.startModuleId}`)}
+              className="mt-2 text-xs font-bold text-amber-700 underline underline-offset-2 hover:text-amber-900"
+            >
+              انتقل إليها الآن ←
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Welcome hero */}
       <div className="bg-gradient-to-l from-trust-700 to-trust-900 rounded-3xl p-6 text-white overflow-hidden relative">
         <div className="absolute top-0 start-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 -translate-x-1/2" />
@@ -137,7 +169,7 @@ export default function DashboardPage() {
       {/* Phase cards grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {PHASES.map(phase => (
-          <PhaseCard key={phase.id} phase={phase} />
+          <PhaseCard key={phase.id} phase={phase} recommendedModules={deptConfig.recommendedModules} />
         ))}
       </div>
 

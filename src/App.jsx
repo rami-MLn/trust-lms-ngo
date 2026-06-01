@@ -5,6 +5,7 @@ import Layout from './components/layout/Layout'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import ModulePage from './pages/ModulePage'
+import AdminPage from './pages/AdminPage'
 
 function AppRoutes() {
   const { user, isLoading } = useApp()
@@ -19,6 +20,9 @@ function AppRoutes() {
       </div>
     )
   }
+
+  // Admin route — always accessible regardless of user login
+  // (handled separately in the outer router)
 
   if (!user) return <LoginPage />
 
@@ -36,9 +40,16 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppProvider>
-        <AppRoutes />
-      </AppProvider>
+      <Routes>
+        {/* Admin route — outside auth gate */}
+        <Route path="/admin" element={<AdminPage />} />
+        {/* All other routes — wrapped in AppProvider + auth */}
+        <Route path="/*" element={
+          <AppProvider>
+            <AppRoutes />
+          </AppProvider>
+        } />
+      </Routes>
     </BrowserRouter>
   )
 }

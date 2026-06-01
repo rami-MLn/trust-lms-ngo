@@ -1,8 +1,30 @@
 import React, { useState } from 'react'
-import { Copy, Check } from 'lucide-react'
+import { Copy, Check, Lightbulb } from 'lucide-react'
+import { useApp } from '../../context/AppContext'
+import { getDepartmentConfig } from '../../data/departments'
+
+// Detect placeholder patterns and return a dept-specific hint if available
+function getDeptHint(text, hints) {
+  if (!hints || !text) return null
+  const patterns = [
+    { regex: /\[أدخل.*(مشروع|برنامج|مبادرة)/i, key: 'project' },
+    { regex: /\[أدخل.*(موضوع|عنوان)/i, key: 'topic' },
+    { regex: /\[أدخل.*(حملة)/i, key: 'campaign' },
+    { regex: /\[أدخل.*(قضية)/i, key: 'issue' },
+    { regex: /\[أدخل.*(إنجاز|نجاح)/i, key: 'achievement' },
+    { regex: /\[أدخل.*(نشاط|فعالية)/i, key: 'activity' },
+  ]
+  for (const p of patterns) {
+    if (p.regex.test(text) && hints[p.key]) return hints[p.key]
+  }
+  return null
+}
 
 export default function PromptCard({ prompt }) {
   const [copied, setCopied] = useState(false)
+  const { user } = useApp()
+  const deptConfig = getDepartmentConfig(user?.department)
+  const hint = getDeptHint(prompt.text, deptConfig.promptHints)
 
   const handleCopy = async () => {
     try {
@@ -65,6 +87,17 @@ export default function PromptCard({ prompt }) {
           {prompt.text}
         </p>
       </div>
+
+      {/* Dept-specific example hint */}
+      {hint && (
+        <div className="flex items-start gap-2 mt-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+          <Lightbulb size={13} className="text-amber-500 flex-shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wide">مثال لقسمك</span>
+            <p className="text-xs text-amber-800 leading-snug mt-0.5">{hint}</p>
+          </div>
+        </div>
+      )}
 
       {/* ID + hint */}
       <div className="flex items-center justify-between mt-3">
