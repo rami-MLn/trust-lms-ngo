@@ -1,11 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Lock, Users, TrendingUp, Download, RefreshCw, ChevronDown, ChevronUp, LogOut, Shield } from 'lucide-react'
+import { Lock, Users, TrendingUp, Download, RefreshCw, ChevronDown, ChevronUp, LogOut, Shield, Wifi, WifiOff } from 'lucide-react'
 import { MODULES_LIST } from '../data/modules'
+import { supabase } from '../lib/supabase'
 
 const ADMIN_PASSWORD = 'TRUST@admin2026'
 const REGISTRY_KEY = 'trust_lms_registry'
 
-function getRegistry() {
+async function getRegistry() {
+  // Try Supabase first
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('user_registry')
+        .select('*')
+        .order('last_active', { ascending: false })
+      if (!error && data) {
+        // Normalise field names (Supabase uses snake_case)
+        return data.map(u => ({
+          ...u,
+          lastActive: u.last_active,
+          progress: u.progress || {},
+        }))
+      }
+    } catch { /* fall through to localStorage */ }
+  }
+  // Fallback: local device only
   try { return JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]') } catch { return [] }
 }
 
@@ -114,11 +133,20 @@ function UserRow({ user }) {
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [authError, setAuthError] = useState('')
   const [users, setUsers] = useState([])
   const [filterDept, setFilterDept] = useState('الكل')
 
-  const refresh = useCallback(() => setUsers(getRegistry()), [])
+  const [isOnline, setIsOnline] = useState(!!supabase)
+  const [loading, setLoading] = useState(false)
+
+  const refresh = useCallback(async () => {
+    setLoading(true)
+    const data = await getRegistry()
+    setUsers(data)
+    setIsOnline(!!supabase && data.length > 0 ? true : !!supabase)
+    setLoading(false)
+  }, [])
 
   useEffect(() => {
     if (authed) refresh()
@@ -128,9 +156,9 @@ export default function AdminPage() {
     e.preventDefault()
     if (password === ADMIN_PASSWORD) {
       setAuthed(true)
-      setError('')
+      setAuthError('')
     } else {
-      setError('كلمة المرور غير صحيحة')
+      setAuthError('كلمة المرور غير صحيحة')
     }
   }
 
@@ -155,7 +183,7 @@ export default function AdminPage() {
               onChange={e => setPassword(e.target.value)}
               autoFocus
             />
-            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+            {authError && <p className="text-red-500 text-sm text-center">{authError}</p>}
             <button type="submit" className="w-full bg-trust-700 text-white font-bold py-3 rounded-xl hover:bg-trust-800 transition-colors">
               دخول
             </button>
@@ -192,9 +220,15 @@ export default function AdminPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* DB connection status */}
+          <div className={`hidden sm:flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl
+            ${isOnline ? 'bg-success-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+            {isOnline ? <Wifi size={13} /> : <WifiOff size={13} />}
+            {isOnline ? 'Supabase متصل' : 'وضع محلي فقط'}
+          </div>
           <button
             onClick={refresh}
-            className="p-2 rounded-xl hover:bg-white/10 transition-colors"
+            className={`p-2 rounded-xl hover:bg-white/10 transition-colors ${loading ? 'animate-spin' : ''}`}
             title="تحديث"
           >
             <RefreshCw size={18} />

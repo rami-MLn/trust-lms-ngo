@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { MODULES_LIST } from '../data/modules'
+import { supabase } from '../lib/supabase'
 
 const AppContext = createContext(null)
 
@@ -8,6 +9,42 @@ const PROGRESS_KEY = 'trust_lms_progress'
 const SUBMISSIONS_KEY = 'trust_lms_submissions'
 const REGISTRY_KEY = 'trust_lms_registry'
 
+// ─── Supabase helpers ────────────────────────────────────────────────────────
+async function sbUpsertUser(user) {
+  if (!supabase) return
+  try {
+    await supabase.from('user_registry').upsert({
+      id: user.id,
+      name: user.name,
+      department: user.department,
+      progress: {},
+      last_active: new Date().toISOString(),
+    }, { onConflict: 'name,department', ignoreDuplicates: false })
+  } catch { /* non-blocking */ }
+}
+
+async function sbUpdateProgress(userId, progressMap, lastActive) {
+  if (!supabase) return
+  try {
+    await supabase.from('user_registry')
+      .update({ progress: progressMap, last_active: lastActive })
+      .eq('id', userId)
+  } catch { /* non-blocking */ }
+}
+
+async function sbFetchAllUsers() {
+  if (!supabase) return null
+  try {
+    const { data, error } = await supabase
+      .from('user_registry')
+      .select('*')
+      .order('last_active', { ascending: false })
+    if (error) return null
+    return data
+  } catch { return null }
+}
+
+// ─── Context ─────────────────────────────────────────────────────────────────
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null)
   const [progress, setProgress] = useState({})
@@ -24,9 +61,7 @@ export function AppProvider({ children }) {
       if (storedUser) setUser(JSON.parse(storedUser))
       if (storedProgress) setProgress(JSON.parse(storedProgress))
       if (storedSubmissions) setSubmissions(JSON.parse(storedSubmissions))
-    } catch {
-      // ignore parse errors
-    }
+    } catch { /* ignore parse errors */ }
     setIsLoading(false)
   }, [])
 
@@ -38,31 +73,10 @@ export function AppProvider({ children }) {
       createdAt: new Date().toISOString(),
     }
 
-    // Try to sync with backend (non-blocking)
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newUser.name, department: newUser.department }),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        newUser.id = data.user.id
-        if (data.progress?.length) {
-          const progressMap = {}
-          data.progress.forEach(p => { progressMap[p.moduleId] = p.status })
-          setProgress(progressMap)
-          localStorage.setItem(PROGRESS_KEY, JSON.stringify(progressMap))
-        }
-      }
-    } catch {
-      // offline mode — continue with local storage
-    }
+    // 1. Sync to Supabase (primary, non-blocking)
+    await sbUpsertUser(newUser)
 
-    setUser(newUser)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser))
-
-    // Update shared registry (for admin dashboard)
+    // 2. Update local registry (fallback)
     try {
       const registry = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]')
       const existingIdx = registry.findIndex(
@@ -80,6 +94,8 @@ export function AppProvider({ children }) {
       localStorage.setItem(REGISTRY_KEY, JSON.stringify(registry))
     } catch { /* ignore */ }
 
+    setUser(newUser)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser))
     return newUser
   }, [])
 
@@ -90,31 +106,23 @@ export function AppProvider({ children }) {
 
   const updateProgress = useCallback(async (moduleId, status) => {
     const updated = { ...progress, [moduleId]: status }
+    const now = new Date().toISOString()
     setProgress(updated)
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(updated))
 
-    // Update registry
+    // 1. Sync to Supabase
+    if (user?.id) await sbUpdateProgress(user.id, updated, now)
+
+    // 2. Update local registry
     try {
       const registry = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]')
       const idx = registry.findIndex(u => u.id === user?.id)
       if (idx !== -1) {
         registry[idx].progress = { ...registry[idx].progress, [moduleId]: status }
-        registry[idx].lastActive = new Date().toISOString()
+        registry[idx].lastActive = now
         localStorage.setItem(REGISTRY_KEY, JSON.stringify(registry))
       }
     } catch { /* ignore */ }
-
-    if (user?.id) {
-      try {
-        await fetch('/api/progress', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user.id, moduleId, status }),
-        })
-      } catch {
-        // offline — already saved locally
-      }
-    }
   }, [progress, user])
 
   const submitTask = useCallback(async ({ moduleId, content, taskTrack }) => {
@@ -125,31 +133,15 @@ export function AppProvider({ children }) {
       taskTrack,
       submittedAt: new Date().toISOString(),
     }
-
     const updatedSubs = {
       ...submissions,
       [moduleId]: [...(submissions[moduleId] || []), submission],
     }
     setSubmissions(updatedSubs)
     localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(updatedSubs))
-
-    // Mark module completed
     await updateProgress(moduleId, 'completed')
-
-    if (user?.id) {
-      try {
-        await fetch('/api/submissions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user.id, moduleId, content, taskTrack }),
-        })
-      } catch {
-        // offline mode
-      }
-    }
-
     return submission
-  }, [submissions, user, updateProgress])
+  }, [submissions, updateProgress])
 
   const getModuleStatus = useCallback((moduleId) => {
     return progress[moduleId] || 'not_started'
@@ -169,7 +161,10 @@ export function AppProvider({ children }) {
     return !!(submissions[moduleId]?.length)
   }, [submissions])
 
-  const getRegistry = useCallback(() => {
+  // Returns Supabase data if available, falls back to localStorage
+  const getRegistry = useCallback(async () => {
+    const remote = await sbFetchAllUsers()
+    if (remote) return remote
     try {
       return JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]')
     } catch { return [] }
