@@ -49,7 +49,7 @@ function SliderPanel({ tip }) {
       <div
         ref={containerRef}
         className="before-after-container h-48 select-none cursor-ew-resize"
-        style={{ position: 'relative' }}
+        style={{ position: 'relative', touchAction: 'pan-y' }}
         onMouseDown={() => { dragging.current = true }}
         onMouseMove={onMouseMove}
         onMouseUp={stopDrag}
@@ -58,37 +58,41 @@ function SliderPanel({ tip }) {
         onTouchMove={onTouchMove}
         onTouchEnd={stopDrag}
       >
-        {/* BEFORE panel (full width) */}
+        {/* BEFORE panel (full width) — text anchored in the LEFT half, where this panel stays visible */}
         <div
-          className="absolute inset-0 flex items-center justify-center rounded-2xl"
+          className="absolute inset-0 rounded-2xl"
           style={{ backgroundColor: tip.before.bgColor }}
         >
-          <div className="text-center px-4">
-            <p className="text-3xl mb-2">📷</p>
-            <p className="text-xs font-medium text-gray-600 max-w-28 mx-auto leading-snug">
-              {tip.before.text}
-            </p>
+          <div className="absolute left-0 top-0 h-full w-1/2 flex items-center justify-center">
+            <div className="text-center px-2">
+              <p className="text-3xl mb-2">📷</p>
+              <p className="text-xs font-medium text-gray-600 max-w-28 mx-auto leading-snug">
+                {tip.before.text}
+              </p>
+            </div>
           </div>
-          <div className="absolute top-2 start-2">
+          <div className="absolute top-2 left-2">
             <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">قبل</span>
           </div>
         </div>
 
-        {/* AFTER panel (clipped) */}
+        {/* AFTER panel (clipped from the left) — text anchored in the RIGHT half */}
         <div
-          className="absolute inset-0 flex items-center justify-center rounded-2xl overflow-hidden"
+          className="absolute inset-0 rounded-2xl overflow-hidden"
           style={{
             clipPath: `inset(0 0 0 ${100 - sliderX}%)`,
             backgroundColor: tip.after.bgColor,
           }}
         >
-          <div className="text-center px-4">
-            <p className="text-3xl mb-2">🌟</p>
-            <p className="text-xs font-medium text-gray-700 max-w-28 mx-auto leading-snug">
-              {tip.after.text}
-            </p>
+          <div className="absolute right-0 top-0 h-full w-1/2 flex items-center justify-center">
+            <div className="text-center px-2">
+              <p className="text-3xl mb-2">🌟</p>
+              <p className="text-xs font-medium text-gray-700 max-w-28 mx-auto leading-snug">
+                {tip.after.text}
+              </p>
+            </div>
           </div>
-          <div className="absolute top-2 end-2">
+          <div className="absolute top-2 right-2">
             <span className="bg-success-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">بعد</span>
           </div>
         </div>

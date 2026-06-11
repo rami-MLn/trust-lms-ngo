@@ -22,6 +22,7 @@ function getDeptHint(text, hints) {
 
 export default function PromptCard({ prompt }) {
   const [copied, setCopied] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const { user } = useApp()
   const deptConfig = getDepartmentConfig(user?.department)
   const hint = getDeptHint(prompt.text, deptConfig.promptHints)
@@ -47,7 +48,7 @@ export default function PromptCard({ prompt }) {
   return (
     <div
       className={`prompt-card relative ${copied ? 'copy-flash' : ''}`}
-      onClick={handleCopy}
+      onClick={() => setExpanded(prev => !prev)}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -81,9 +82,9 @@ export default function PromptCard({ prompt }) {
         </div>
       )}
 
-      {/* Prompt text */}
+      {/* Prompt text — click card to expand/collapse */}
       <div className="bg-white rounded-xl p-3 border border-trust-100">
-        <p className="text-gray-700 text-sm leading-relaxed font-light line-clamp-4">
+        <p className={`text-gray-700 text-sm leading-relaxed font-light ${expanded ? '' : 'line-clamp-4'}`}>
           {prompt.text}
         </p>
       </div>
@@ -102,7 +103,9 @@ export default function PromptCard({ prompt }) {
       {/* ID + hint */}
       <div className="flex items-center justify-between mt-3">
         <span className="text-xs text-gray-400">{prompt.id}</span>
-        <span className="text-xs text-trust-500 font-medium">انقر للنسخ بضغطة واحدة</span>
+        <span className="text-xs text-trust-500 font-medium">
+          {expanded ? 'انقر لطي النص' : 'انقر لقراءة النص كاملاً'}
+        </span>
       </div>
     </div>
   )

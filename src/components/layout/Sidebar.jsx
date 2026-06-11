@@ -21,7 +21,7 @@ function StatusIcon({ status, size = 16 }) {
 export default function Sidebar() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { getModuleStatus, sidebarOpen, getCompletedCount, getCompletionPercentage } = useApp()
+  const { getModuleStatus, sidebarOpen, setSidebarOpen, getCompletedCount, getCompletionPercentage } = useApp()
   const [expandedPhases, setExpandedPhases] = useState({ 1: true, 2: true, 3: true, 4: true })
 
   const currentModuleId = location.pathname.startsWith('/module/')
@@ -30,6 +30,12 @@ export default function Sidebar() {
 
   const togglePhase = (phaseId) => {
     setExpandedPhases(prev => ({ ...prev, [phaseId]: !prev[phaseId] }))
+  }
+
+  // On mobile the sidebar is a full-screen drawer — close it after navigating
+  const go = (path) => {
+    navigate(path)
+    if (typeof window !== 'undefined' && window.innerWidth < 768) setSidebarOpen(false)
   }
 
   if (!sidebarOpen) return null
@@ -58,7 +64,7 @@ export default function Sidebar() {
       <nav className="flex-1 overflow-y-auto py-3 px-2">
         {/* Dashboard link */}
         <button
-          onClick={() => navigate('/')}
+          onClick={() => go('/')}
           className={`nav-item mb-2 ${location.pathname === '/' ? 'active' : ''}`}
         >
           <span className="text-lg">🏠</span>
@@ -102,7 +108,7 @@ export default function Sidebar() {
                     return (
                       <button
                         key={module.id}
-                        onClick={() => navigate(`/module/${module.id}`)}
+                        onClick={() => go(`/module/${module.id}`)}
                         className={`nav-item text-start ${isActive ? 'active' : ''}`}
                       >
                         <StatusIcon status={status} size={15} />

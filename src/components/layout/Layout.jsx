@@ -4,7 +4,7 @@ import Sidebar from './Sidebar'
 import { useApp } from '../../context/AppContext'
 
 export default function Layout({ children }) {
-  const { sidebarOpen } = useApp()
+  const { sidebarOpen, setSidebarOpen } = useApp()
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col" dir="rtl">
@@ -13,10 +13,10 @@ export default function Layout({ children }) {
         {/* Sidebar — RIGHT in RTL layout */}
         {sidebarOpen && (
           <>
-            {/* Mobile overlay */}
+            {/* Mobile overlay — tap to close */}
             <div
               className="fixed inset-0 bg-black/40 z-30 md:hidden"
-              onClick={() => {}}
+              onClick={() => setSidebarOpen(false)}
             />
             <div className="fixed md:relative inset-y-0 end-0 z-30 md:z-auto">
               <Sidebar />

@@ -10,26 +10,47 @@ const SUBMISSIONS_KEY = 'trust_lms_submissions'
 const REGISTRY_KEY = 'trust_lms_registry'
 
 // ─── Supabase helpers ────────────────────────────────────────────────────────
-async function sbUpsertUser(user) {
+// Look up an existing user row by identity (name + department) so a returning
+// user — on any device — gets back their stable id and saved progress.
+async function sbFindUser(name, department) {
+  if (!supabase) return null
+  try {
+    const { data, error } = await supabase.from('user_registry')
+      .select('*')
+      .eq('name', name)
+      .eq('department', department)
+      .order('last_active', { ascending: false })
+      .limit(1)
+    if (error || !data?.length) return null
+    return data[0]
+  } catch { return null }
+}
+
+// Upsert keyed on the PK (id). Creates the row if missing, updates otherwise —
+// never wipes progress because we always send the full merged map.
+async function sbSaveUser(user, progressMap) {
   if (!supabase) return
   try {
     await supabase.from('user_registry').upsert({
       id: user.id,
       name: user.name,
       department: user.department,
-      progress: {},
+      progress: progressMap || {},
       last_active: new Date().toISOString(),
-    }, { onConflict: 'name,department', ignoreDuplicates: false })
+    }, { onConflict: 'id' })
   } catch { /* non-blocking */ }
 }
 
-async function sbUpdateProgress(userId, progressMap, lastActive) {
-  if (!supabase) return
-  try {
-    await supabase.from('user_registry')
-      .update({ progress: progressMap, last_active: lastActive })
-      .eq('id', userId)
-  } catch { /* non-blocking */ }
+// Merge two progress maps — the more advanced status wins per module.
+const STATUS_RANK = { not_started: 0, in_progress: 1, completed: 2 }
+function mergeProgress(a = {}, b = {}) {
+  const merged = { ...a }
+  for (const [moduleId, status] of Object.entries(b)) {
+    if ((STATUS_RANK[status] ?? 0) >= (STATUS_RANK[merged[moduleId]] ?? 0)) {
+      merged[moduleId] = status
+    }
+  }
+  return merged
 }
 
 async function sbFetchAllUsers() {
@@ -49,7 +70,10 @@ export function AppProvider({ children }) {
   const [user, setUser] = useState(null)
   const [progress, setProgress] = useState({})
   const [submissions, setSubmissions] = useState({})
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  // Sidebar: open by default on desktop, closed on mobile (covers the screen)
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => typeof window === 'undefined' || window.innerWidth >= 768
+  )
   const [isLoading, setIsLoading] = useState(true)
 
   // Hydrate from localStorage on mount
@@ -66,28 +90,48 @@ export function AppProvider({ children }) {
   }, [])
 
   const login = useCallback(async ({ name, department }) => {
+    const cleanName = name.trim()
+    const cleanDept = department.trim()
+
+    // 1. Look up this identity on the server — returning users (any device)
+    //    get their stable id and saved progress back.
+    const existing = await sbFindUser(cleanName, cleanDept)
+
     const newUser = {
-      id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      name: name.trim(),
-      department: department.trim(),
-      createdAt: new Date().toISOString(),
+      id: existing?.id || `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      name: cleanName,
+      department: cleanDept,
+      createdAt: existing?.created_at || new Date().toISOString(),
     }
 
-    // 1. Sync to Supabase (primary, non-blocking)
-    await sbUpsertUser(newUser)
+    // 2. Restore progress: merge server progress with this device's progress
+    //    for the SAME identity (from the local registry — never another user's).
+    let deviceOwnProgress = {}
+    try {
+      const registry = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]')
+      const own = registry.find(u => u.name === cleanName && u.department === cleanDept)
+      deviceOwnProgress = own?.progress || {}
+    } catch { /* ignore */ }
+    const restored = mergeProgress(deviceOwnProgress, existing?.progress || {})
+    setProgress(restored)
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(restored))
 
-    // 2. Update local registry (fallback)
+    // 3. Save to Supabase (upsert by id — creates or updates, never wipes)
+    await sbSaveUser(newUser, restored)
+
+    // 4. Update local registry (offline fallback)
     try {
       const registry = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]')
       const existingIdx = registry.findIndex(
         u => u.name === newUser.name && u.department === newUser.department
       )
       if (existingIdx === -1) {
-        registry.push({ ...newUser, progress: {}, lastActive: new Date().toISOString() })
+        registry.push({ ...newUser, progress: restored, lastActive: new Date().toISOString() })
       } else {
         registry[existingIdx] = {
           ...registry[existingIdx],
           id: newUser.id,
+          progress: restored,
           lastActive: new Date().toISOString(),
         }
       }
@@ -110,8 +154,8 @@ export function AppProvider({ children }) {
     setProgress(updated)
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(updated))
 
-    // 1. Sync to Supabase
-    if (user?.id) await sbUpdateProgress(user.id, updated, now)
+    // 1. Sync to Supabase — upsert (re-creates the row if it was never inserted)
+    if (user?.id) await sbSaveUser(user, updated)
 
     // 2. Update local registry
     try {

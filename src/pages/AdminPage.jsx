@@ -7,7 +7,7 @@ const ADMIN_PASSWORD = 'TRUST@admin2026'
 const REGISTRY_KEY = 'trust_lms_registry'
 
 async function getRegistry() {
-  // Try Supabase first
+  // Try Supabase first — source tells the UI whether data is really remote
   if (supabase) {
     try {
       const { data, error } = await supabase
@@ -16,16 +16,23 @@ async function getRegistry() {
         .order('last_active', { ascending: false })
       if (!error && data) {
         // Normalise field names (Supabase uses snake_case)
-        return data.map(u => ({
-          ...u,
-          lastActive: u.last_active,
-          progress: u.progress || {},
-        }))
+        return {
+          source: 'remote',
+          users: data.map(u => ({
+            ...u,
+            lastActive: u.last_active,
+            progress: u.progress || {},
+          })),
+        }
       }
     } catch { /* fall through to localStorage */ }
   }
   // Fallback: local device only
-  try { return JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]') } catch { return [] }
+  try {
+    return { source: 'local', users: JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]') }
+  } catch {
+    return { source: 'local', users: [] }
+  }
 }
 
 function exportCSV(users) {
@@ -137,14 +144,14 @@ export default function AdminPage() {
   const [users, setUsers] = useState([])
   const [filterDept, setFilterDept] = useState('الكل')
 
-  const [isOnline, setIsOnline] = useState(!!supabase)
+  const [isOnline, setIsOnline] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const refresh = useCallback(async () => {
     setLoading(true)
-    const data = await getRegistry()
-    setUsers(data)
-    setIsOnline(!!supabase && data.length > 0 ? true : !!supabase)
+    const { users: fetched, source } = await getRegistry()
+    setUsers(fetched)
+    setIsOnline(source === 'remote')
     setLoading(false)
   }, [])
 
@@ -287,7 +294,7 @@ export default function AdminPage() {
             <div className="text-center py-16 text-gray-400">
               <Users size={40} className="mx-auto mb-3 opacity-30" />
               <p className="font-semibold">لا يوجد مستخدمون حتى الآن</p>
-              <p className="text-xs mt-1">سيظهر المستخدمون هنا عند تسجيلهم الدخول من هذا الجهاز</p>
+              <p className="text-xs mt-1">سيظهر المستخدمون هنا فور تسجيل دخولهم إلى المنصة</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -308,7 +315,9 @@ export default function AdminPage() {
         </div>
 
         <p className="text-xs text-center text-gray-400">
-          ⚠️ البيانات تعكس المستخدمين الذين سجّلوا دخولهم من هذا الجهاز فقط — كل جهاز يحفظ بياناته محلياً
+          {isOnline
+            ? '✅ متصل بقاعدة البيانات المركزية — يعرض المستخدمين من جميع الأجهزة'
+            : '⚠️ تعذّر الاتصال بقاعدة البيانات — يعرض مستخدمي هذا الجهاز فقط'}
         </p>
       </div>
     </div>
