@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
-import { BookOpen, Loader, AlertCircle } from 'lucide-react'
+import { BookOpen, Loader, AlertCircle, ShieldCheck } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import { isFirebaseReady } from '../lib/firebase'
+import PhoneAuthModal from '../components/auth/PhoneAuthModal'
 
 const DEPARTMENTS = [
   'الإدارة والتشغيل',
@@ -19,6 +21,8 @@ export default function LoginPage() {
   const [department, setDepartment] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showPhoneAuth, setShowPhoneAuth] = useState(false)
+  const phoneEnabled = isFirebaseReady()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -110,6 +114,28 @@ export default function LoginPage() {
             </button>
           </form>
 
+          {/* Verified phone login (only when Firebase is configured) */}
+          {phoneEnabled && (
+            <>
+              <div className="flex items-center gap-3 my-5">
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="text-xs text-gray-400 font-medium">أو</span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPhoneAuth(true)}
+                className="btn-secondary w-full justify-center text-base py-3"
+              >
+                <ShieldCheck size={18} />
+                تسجيل الدخول بالهاتف (حساب موثّق)
+              </button>
+              <p className="text-xs text-gray-400 text-center mt-2">
+                يحفظ تقدمك ويتيح متابعته من أي جهاز
+              </p>
+            </>
+          )}
+
           {/* Info */}
           <div className="mt-6 pt-5 border-t border-gray-100">
             <p className="text-xs text-gray-400 text-center leading-relaxed">
@@ -134,6 +160,8 @@ export default function LoginPage() {
           ))}
         </div>
       </div>
+
+      {showPhoneAuth && <PhoneAuthModal onClose={() => setShowPhoneAuth(false)} />}
     </div>
   )
 }

@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import ModulePage from './pages/ModulePage'
 import AdminPage from './pages/AdminPage'
+import ProfilePage from './pages/ProfilePage'
 
 function AppRoutes() {
   const { user, isLoading } = useApp()
@@ -30,6 +31,7 @@ function AppRoutes() {
     <Layout>
       <Routes>
         <Route path="/" element={<DashboardPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/module/:moduleId" element={<ModulePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

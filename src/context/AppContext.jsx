@@ -26,18 +26,34 @@ async function sbFindUser(name, department) {
   } catch { return null }
 }
 
+// Look up a single row by an arbitrary column (id or phone).
+async function sbFindUserBy(field, value) {
+  if (!supabase || !value) return null
+  try {
+    const { data, error } = await supabase.from('user_registry')
+      .select('*').eq(field, value).limit(1)
+    if (error || !data?.length) return null
+    return data[0]
+  } catch { return null }
+}
+
 // Upsert keyed on the PK (id). Creates the row if missing, updates otherwise —
-// never wipes progress because we always send the full merged map.
+// never wipes progress because we always send the full merged map. Optional
+// verified-account columns (phone, email, auth_method) are only sent when set.
 async function sbSaveUser(user, progressMap) {
   if (!supabase) return
   try {
-    await supabase.from('user_registry').upsert({
+    const payload = {
       id: user.id,
       name: user.name,
       department: user.department,
       progress: progressMap || {},
       last_active: new Date().toISOString(),
-    }, { onConflict: 'id' })
+    }
+    if (user.phone) payload.phone = user.phone
+    if (user.email) payload.email = user.email
+    if (user.authMethod) payload.auth_method = user.authMethod
+    await supabase.from('user_registry').upsert(payload, { onConflict: 'id' })
   } catch { /* non-blocking */ }
 }
 
@@ -143,6 +159,72 @@ export function AppProvider({ children }) {
     return newUser
   }, [])
 
+  // Finalize a Firebase phone-verified login.
+  // First call (uid + phone only): returning user → restore & sign in;
+  //   new user → return { isNew: true } so the caller collects name/dept/email.
+  // Second call (forceCreate + name/dept/email): create the verified account.
+  const loginVerified = useCallback(async ({ uid, phone, name, department, email, forceCreate }) => {
+    // Find an existing row by Firebase uid first, then by phone number.
+    const existing = (await sbFindUserBy('id', uid)) || (await sbFindUserBy('phone', phone))
+
+    if (!existing && !forceCreate) {
+      return { isNew: true }
+    }
+
+    const verifiedUser = {
+      id: uid,
+      name: (name ?? existing?.name ?? '').trim(),
+      department: department ?? existing?.department ?? '',
+      email: email ?? existing?.email ?? null,
+      phone: phone || existing?.phone || null,
+      authMethod: 'phone',
+      createdAt: existing?.created_at || new Date().toISOString(),
+    }
+
+    // Restore progress from the server row (verified accounts are server-truth).
+    const restored = mergeProgress({}, existing?.progress || {})
+    setProgress(restored)
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(restored))
+
+    await sbSaveUser(verifiedUser, restored)
+
+    // Mirror into the local registry (offline fallback)
+    try {
+      const registry = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]')
+      const idx = registry.findIndex(u => u.id === uid)
+      const entry = { ...verifiedUser, progress: restored, lastActive: new Date().toISOString() }
+      if (idx === -1) registry.push(entry); else registry[idx] = entry
+      localStorage.setItem(REGISTRY_KEY, JSON.stringify(registry))
+    } catch { /* ignore */ }
+
+    setUser(verifiedUser)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(verifiedUser))
+    return { isNew: false, user: verifiedUser }
+  }, [])
+
+  // Edit profile fields (name, department, email) for the current user.
+  const updateProfile = useCallback(async ({ name, department, email }) => {
+    if (!user) return
+    const updated = {
+      ...user,
+      name: name?.trim() ?? user.name,
+      department: department ?? user.department,
+      email: email?.trim() ?? user.email,
+    }
+    setUser(updated)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+    await sbSaveUser(updated, progress)
+    try {
+      const registry = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]')
+      const idx = registry.findIndex(u => u.id === user.id)
+      if (idx !== -1) {
+        registry[idx] = { ...registry[idx], ...updated, progress, lastActive: new Date().toISOString() }
+        localStorage.setItem(REGISTRY_KEY, JSON.stringify(registry))
+      }
+    } catch { /* ignore */ }
+    return updated
+  }, [user, progress])
+
   const logout = useCallback(() => {
     setUser(null)
     localStorage.removeItem(STORAGE_KEY)
@@ -222,6 +304,8 @@ export function AppProvider({ children }) {
       sidebarOpen,
       isLoading,
       login,
+      loginVerified,
+      updateProfile,
       logout,
       updateProgress,
       submitTask,

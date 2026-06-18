@@ -1,8 +1,10 @@
 import React from 'react'
 import { Menu, X, LogOut, BookOpen } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 
 export default function Header() {
+  const navigate = useNavigate()
   const { user, logout, sidebarOpen, setSidebarOpen, getCompletionPercentage, getCompletedCount } = useApp()
   const pct = getCompletionPercentage()
   const completed = getCompletedCount()
@@ -58,12 +60,16 @@ export default function Header() {
           </div>
 
           {user && (
-            <div className="hidden sm:flex items-center gap-2 bg-white/10 rounded-xl px-3 py-1.5">
+            <button
+              onClick={() => navigate('/profile')}
+              className="hidden sm:flex items-center gap-2 bg-white/10 rounded-xl px-3 py-1.5 hover:bg-white/20 transition-colors"
+              title="ملفي الشخصي"
+            >
               <div className="w-7 h-7 bg-accent-500 rounded-full flex items-center justify-center text-xs font-bold">
                 {user.name.charAt(0)}
               </div>
               <span className="text-sm font-medium">{user.name}</span>
-            </div>
+            </button>
           )}
 
           <button
