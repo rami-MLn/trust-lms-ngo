@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { BookOpen, Loader, AlertCircle, ShieldCheck } from 'lucide-react'
+import { BookOpen, Loader, AlertCircle, ShieldCheck, Mail } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { isFirebaseReady } from '../lib/firebase'
 import PhoneAuthModal from '../components/auth/PhoneAuthModal'
+import EmailAuthModal from '../components/auth/EmailAuthModal'
 
 const DEPARTMENTS = [
   'الإدارة والتشغيل',
@@ -22,7 +23,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPhoneAuth, setShowPhoneAuth] = useState(false)
-  const phoneEnabled = isFirebaseReady()
+  const [showEmailAuth, setShowEmailAuth] = useState(false)
+  const verifiedEnabled = isFirebaseReady()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -110,28 +112,38 @@ export default function LoginPage() {
               disabled={loading}
             >
               {loading ? <Loader size={18} className="animate-spin" /> : null}
-              {loading ? 'جارٍ الدخول...' : 'ابدأ التدريب 🚀'}
+              {loading ? 'جارٍ الدخول...' : (verifiedEnabled ? 'الدخول كضيف 🚀' : 'ابدأ التدريب 🚀')}
             </button>
           </form>
 
-          {/* Verified phone login (only when Firebase is configured) */}
-          {phoneEnabled && (
+          {/* Verified sign-up options (only when Firebase is configured) */}
+          {verifiedEnabled && (
             <>
               <div className="flex items-center gap-3 my-5">
                 <div className="flex-1 h-px bg-gray-200" />
-                <span className="text-xs text-gray-400 font-medium">أو</span>
+                <span className="text-xs text-gray-400 font-medium whitespace-nowrap">أو أنشئ حساباً موثّقاً</span>
                 <div className="flex-1 h-px bg-gray-200" />
               </div>
-              <button
-                type="button"
-                onClick={() => setShowPhoneAuth(true)}
-                className="btn-secondary w-full justify-center text-base py-3"
-              >
-                <ShieldCheck size={18} />
-                تسجيل الدخول بالهاتف (حساب موثّق)
-              </button>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowPhoneAuth(true)}
+                  className="btn-secondary justify-center text-sm py-3"
+                >
+                  <ShieldCheck size={17} />
+                  بالهاتف
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEmailAuth(true)}
+                  className="btn-secondary justify-center text-sm py-3"
+                >
+                  <Mail size={17} />
+                  بالبريد
+                </button>
+              </div>
               <p className="text-xs text-gray-400 text-center mt-2">
-                يحفظ تقدمك ويتيح متابعته من أي جهاز
+                الحساب الموثّق يحفظ تقدمك ويتيح متابعته من أي جهاز
               </p>
             </>
           )}
@@ -162,6 +174,7 @@ export default function LoginPage() {
       </div>
 
       {showPhoneAuth && <PhoneAuthModal onClose={() => setShowPhoneAuth(false)} />}
+      {showEmailAuth && <EmailAuthModal onClose={() => setShowEmailAuth(false)} />}
     </div>
   )
 }

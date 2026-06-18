@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { MODULES_LIST } from '../data/modules'
 import { supabase } from '../lib/supabase'
+import { isEmailSignInLink, completeEmailLink } from '../lib/firebase'
 
 const AppContext = createContext(null)
 
@@ -91,6 +92,8 @@ export function AppProvider({ children }) {
     () => typeof window === 'undefined' || window.innerWidth >= 768
   )
   const [isLoading, setIsLoading] = useState(true)
+  // Ref to loginVerified so the mount effect can call it without ordering issues
+  const loginVerifiedRef = useRef(null)
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -102,7 +105,31 @@ export function AppProvider({ children }) {
       if (storedProgress) setProgress(JSON.parse(storedProgress))
       if (storedSubmissions) setSubmissions(JSON.parse(storedSubmissions))
     } catch { /* ignore parse errors */ }
-    setIsLoading(false)
+
+    // If the user arrived via an email sign-in link, finish that flow.
+    if (isEmailSignInLink()) {
+      completeEmailLink()
+        .then((res) => {
+          if (res?.user) {
+            return loginVerifiedRef.current?.({
+              uid: res.user.uid,
+              email: res.user.email,
+              name: res.name,
+              department: res.department,
+              authMethod: 'email',
+              forceCreate: true,
+            })
+          }
+        })
+        .catch(() => { /* ignore — user can retry from login */ })
+        .finally(() => {
+          // Clean the link params out of the URL
+          window.history.replaceState({}, '', window.location.origin + '/')
+          setIsLoading(false)
+        })
+    } else {
+      setIsLoading(false)
+    }
   }, [])
 
   const login = useCallback(async ({ name, department }) => {
@@ -163,9 +190,11 @@ export function AppProvider({ children }) {
   // First call (uid + phone only): returning user → restore & sign in;
   //   new user → return { isNew: true } so the caller collects name/dept/email.
   // Second call (forceCreate + name/dept/email): create the verified account.
-  const loginVerified = useCallback(async ({ uid, phone, name, department, email, forceCreate }) => {
-    // Find an existing row by Firebase uid first, then by phone number.
-    const existing = (await sbFindUserBy('id', uid)) || (await sbFindUserBy('phone', phone))
+  const loginVerified = useCallback(async ({ uid, phone, name, department, email, authMethod = 'phone', forceCreate }) => {
+    // Find an existing row by Firebase uid first, then by phone or email.
+    const existing = (await sbFindUserBy('id', uid))
+      || (phone && await sbFindUserBy('phone', phone))
+      || (email && await sbFindUserBy('email', email))
 
     if (!existing && !forceCreate) {
       return { isNew: true }
@@ -177,7 +206,7 @@ export function AppProvider({ children }) {
       department: department ?? existing?.department ?? '',
       email: email ?? existing?.email ?? null,
       phone: phone || existing?.phone || null,
-      authMethod: 'phone',
+      authMethod: existing?.auth_method || authMethod,
       createdAt: existing?.created_at || new Date().toISOString(),
     }
 
@@ -201,6 +230,8 @@ export function AppProvider({ children }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(verifiedUser))
     return { isNew: false, user: verifiedUser }
   }, [])
+  // Keep the ref current so the mount effect (email-link return) can call it
+  loginVerifiedRef.current = loginVerified
 
   // Edit profile fields (name, department, email) for the current user.
   const updateProfile = useCallback(async ({ name, department, email }) => {
