@@ -12,6 +12,7 @@ const DEPARTMENTS = [
 export default function PhoneAuthModal({ onClose }) {
   const { loginVerified } = useApp()
   const [step, setStep] = useState('phone')   // phone → otp → profile
+  const [country, setCountry] = useState('970') // 970 = Palestine, 972 = Israel
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
@@ -27,7 +28,7 @@ export default function PhoneAuthModal({ onClose }) {
 
   const handleSendOtp = async (e) => {
     e.preventDefault()
-    const e164 = toE164(phone)
+    const e164 = toE164(phone, country)
     if (!e164) { setError('الرجاء إدخال رقم هاتف صحيح'); return }
     setError(''); setLoading(true)
     try {
@@ -107,15 +108,25 @@ export default function PhoneAuthModal({ onClose }) {
             <h2 className="text-xl font-extrabold text-trust-800 text-center mb-1">تسجيل الدخول الموثّق</h2>
             <p className="text-gray-500 text-sm text-center mb-5">أدخل رقم هاتفك لإرسال رمز تحقق عبر رسالة نصية</p>
             <label className="block text-sm font-bold text-gray-700 mb-1.5">رقم الهاتف</label>
-            <input
-              type="tel" dir="ltr"
-              className="input-field text-left"
-              placeholder="07XXXXXXXX"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              autoFocus
-            />
-            <p className="text-xs text-gray-400 mt-1.5">مثال: 0791234567 (سيُرسل رمز تحقق عبر SMS)</p>
+            <div className="flex gap-2" dir="ltr">
+              <select
+                className="input-field w-32 flex-shrink-0 appearance-none text-sm"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+              >
+                <option value="970">🇵🇸 +970</option>
+                <option value="972">🇮🇱 +972</option>
+              </select>
+              <input
+                type="tel" dir="ltr"
+                className="input-field text-left flex-1"
+                placeholder="05XXXXXXXX"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-1.5">اختر الدولة وأدخل رقمك، مثال: 0599123456 (سيُرسل رمز تحقق عبر SMS)</p>
             {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
             <button type="submit" disabled={loading} className="btn-primary w-full justify-center mt-5 py-3">
               {loading ? <Loader size={18} className="animate-spin" /> : <ArrowRight size={18} className="rotate-180" />}
@@ -129,7 +140,7 @@ export default function PhoneAuthModal({ onClose }) {
           <form onSubmit={handleVerify}>
             <h2 className="text-xl font-extrabold text-trust-800 text-center mb-1">أدخل رمز التحقق</h2>
             <p className="text-gray-500 text-sm text-center mb-5">
-              أرسلنا رمزاً مكوّناً من 6 أرقام إلى <span dir="ltr" className="font-bold">{toE164(phone)}</span>
+              أرسلنا رمزاً مكوّناً من 6 أرقام إلى <span dir="ltr" className="font-bold">{toE164(phone, country)}</span>
             </p>
             <input
               type="text" inputMode="numeric" dir="ltr"
