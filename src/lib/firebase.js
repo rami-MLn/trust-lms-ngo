@@ -29,7 +29,7 @@ export { auth }
 // ─── E.164 normalization ─────────────────────────────────────────────────────
 // Accepts local (0XXXXXXXXX → +<cc>XXXXXXXXX), 00-prefixed, or already +-prefixed
 // numbers. Default country code from VITE_DEFAULT_PHONE_COUNTRY (digits only,
-// no +), falling back to 962 (Jordan). Override per-call if needed.
+// no +), falling back to 970 (Palestine). Override per-call if needed.
 const DEFAULT_CC = (import.meta.env.VITE_DEFAULT_PHONE_COUNTRY || '970').replace(/\D/g, '')
 export function toE164(raw, defaultCountry = DEFAULT_CC) {
   let n = (raw || '').replace(/[\s\-()]/g, '')
