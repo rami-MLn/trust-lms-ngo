@@ -141,6 +141,7 @@ function ProgressBar({ pct, color = 'bg-trust-600' }) {
 
 function UserRow({ user, onEdit, onDelete }) {
   const [expanded, setExpanded] = useState(false)
+  const [openUnit, setOpenUnit] = useState(null) // moduleId whose submission is shown
   const progress = user.progress || {}
   const completed = Object.values(progress).filter(s => s === 'completed').length
   const pct = Math.round((completed / 13) * 100)
@@ -203,56 +204,73 @@ function UserRow({ user, onEdit, onDelete }) {
                 </button>
               </div>
             </div>
-            <p className="text-xs font-bold text-gray-500 mb-3">تفاصيل التقدم لكل وحدة:</p>
+            <p className="text-xs font-bold text-gray-500 mb-1">تفاصيل التقدم لكل وحدة:</p>
+            <p className="text-[11px] text-gray-400 mb-3">اضغط على أي وحدة لعرض محتوى التسليم 👇</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
               {MODULES_LIST.map(m => {
                 const s = progress[m.id]
+                const subCount = (user.submissions || {})[m.id]?.length || 0
+                const selected = openUnit === m.id
                 return (
-                  <div
+                  <button
                     key={m.id}
-                    className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setOpenUnit(prev => prev === m.id ? null : m.id) }}
+                    className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border text-right transition-all hover:shadow-sm
+                      ${selected ? 'ring-2 ring-trust-400 ' : ''}
                       ${s === 'completed' ? 'bg-success-50 border-success-200 text-success-700'
                         : s === 'in_progress' ? 'bg-warning-50 border-warning-200 text-warning-700'
                         : 'bg-gray-100 border-gray-200 text-gray-400'}`}
                   >
                     <span>{s === 'completed' ? '✅' : s === 'in_progress' ? '🔄' : '⬜'}</span>
-                    <span className="truncate font-medium">{m.order}. {m.title.slice(0, 20)}{m.title.length > 20 ? '...' : ''}</span>
-                  </div>
+                    <span className="truncate font-medium flex-1">{m.order}. {m.title.slice(0, 18)}{m.title.length > 18 ? '...' : ''}</span>
+                    {subCount > 0 && (
+                      <span className="flex-shrink-0 bg-trust-700 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center" title={`${subCount} تسليم`}>
+                        {subCount}
+                      </span>
+                    )}
+                  </button>
                 )
               })}
             </div>
 
-            {/* Submitted task content */}
-            {(() => {
-              const subs = user.submissions || {}
-              const submittedModuleIds = Object.keys(subs).filter(k => subs[k]?.length)
-              if (!submittedModuleIds.length) {
-                return <p className="text-xs text-gray-400 mt-4">لم يُسلّم هذا المستخدم أي مهمة بعد.</p>
-              }
+            {/* Per-unit submission content — only shows the clicked unit */}
+            {openUnit && (() => {
+              const list = (user.submissions || {})[openUnit] || []
+              const mod = MODULES[openUnit]
               return (
-                <div className="mt-5">
-                  <p className="text-xs font-bold text-gray-500 mb-3">📝 محتوى المهام المُسلّمة:</p>
-                  <div className="space-y-3">
-                    {submittedModuleIds.map(mid => {
-                      const list = subs[mid]
-                      const latest = list[list.length - 1]
-                      const mod = MODULES[mid]
-                      const when = latest.submittedAt ? new Date(latest.submittedAt).toLocaleDateString('ar-EG') : ''
-                      return (
-                        <div key={mid} className="bg-white border border-gray-200 rounded-xl p-3">
-                          <div className="flex items-center justify-between mb-1.5 gap-2">
-                            <span className="text-xs font-bold text-trust-700">
-                              {mod ? `وحدة ${mod.order}: ${mod.title}` : mid}
-                            </span>
-                            <span className="text-[10px] text-gray-400 flex-shrink-0">
-                              {when}{list.length > 1 ? ` · ${list.length} تسليمات` : ''}
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap break-words">{latest.content}</p>
-                        </div>
-                      )
-                    })}
+                <div className="mt-4 bg-white border border-trust-200 rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-3 gap-2">
+                    <p className="text-xs font-bold text-trust-700">
+                      📝 {mod ? `وحدة ${mod.order}: ${mod.title}` : openUnit}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setOpenUnit(null) }}
+                      className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+                      title="إغلاق"
+                    >
+                      <X size={15} />
+                    </button>
                   </div>
+                  {list.length === 0 ? (
+                    <p className="text-xs text-gray-400">لم يُسلّم هذا المستخدم أي مهمة في هذه الوحدة بعد.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {[...list].reverse().map((sub, i) => {
+                        const when = sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('ar-EG') : ''
+                        return (
+                          <div key={sub.id || i} className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                            <div className="flex items-center justify-between mb-1.5 gap-2">
+                              <span className="text-[10px] font-bold text-gray-500">التسليم {list.length - i}</span>
+                              <span className="text-[10px] text-gray-400 flex-shrink-0">{when}</span>
+                            </div>
+                            <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap break-words">{sub.content}</p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )
             })()}
