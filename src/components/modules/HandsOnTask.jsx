@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Send, CheckCircle, AlertCircle, Loader } from 'lucide-react'
+import { Send, CheckCircle, AlertCircle, Loader, RotateCcw } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 
 export default function HandsOnTask({ module }) {
@@ -10,6 +10,7 @@ export default function HandsOnTask({ module }) {
   const [content, setContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [redoing, setRedoing] = useState(false)
   const [error, setError] = useState('')
 
   const isCompleted = getModuleStatus(module.id) === 'completed'
@@ -28,6 +29,7 @@ export default function HandsOnTask({ module }) {
     try {
       await submitTask({ moduleId: module.id, content: content.trim(), taskTrack: selectedTrack })
       setSubmitted(true)
+      setRedoing(false)
     } catch {
       setError('حدث خطأ أثناء التسليم، يرجى المحاولة مرة أخرى')
     }
@@ -41,7 +43,7 @@ export default function HandsOnTask({ module }) {
     setSubmitting(false)
   }
 
-  if (isCompleted || submitted) {
+  if ((isCompleted || submitted) && !redoing) {
     return (
       <section className="mb-6">
         <h3 className="heading-3 mb-4 flex items-center gap-2">
@@ -51,9 +53,16 @@ export default function HandsOnTask({ module }) {
         <div className="card bg-success-50 border-success-500/20 text-center py-8">
           <CheckCircle size={48} className="text-success-500 mx-auto mb-3" />
           <h4 className="text-success-700 font-extrabold text-xl mb-2">تم إتمام المهمة!</h4>
-          <p className="text-success-600 text-sm max-w-md mx-auto">
+          <p className="text-success-600 text-sm max-w-md mx-auto mb-5">
             {task.successMessage}
           </p>
+          <button
+            onClick={() => { setRedoing(true); setSubmitted(false); setContent(''); setError('') }}
+            className="inline-flex items-center gap-2 bg-white text-trust-700 border border-trust-200 font-semibold px-4 py-2 rounded-xl hover:bg-trust-50 transition-colors text-sm"
+          >
+            <RotateCcw size={15} />
+            إعادة المهمة وتسليم جديد
+          </button>
         </div>
       </section>
     )

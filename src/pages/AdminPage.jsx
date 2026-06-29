@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Lock, Users, TrendingUp, Download, RefreshCw, ChevronDown, ChevronUp, LogOut, Shield, Wifi, WifiOff } from 'lucide-react'
-import { MODULES_LIST } from '../data/modules'
+import { Lock, Users, TrendingUp, Download, RefreshCw, ChevronDown, ChevronUp, LogOut, Shield, Wifi, WifiOff, Eye, EyeOff, Search, ArrowUpDown } from 'lucide-react'
+import { MODULES_LIST, MODULES } from '../data/modules'
 import { supabase } from '../lib/supabase'
 
 const ADMIN_PASSWORD = 'TRUST@admin2026'
@@ -22,6 +22,7 @@ async function getRegistry() {
             ...u,
             lastActive: u.last_active,
             progress: u.progress || {},
+            submissions: u.submissions || {},
           })),
         }
       }
@@ -130,6 +131,41 @@ function UserRow({ user }) {
                 )
               })}
             </div>
+
+            {/* Submitted task content */}
+            {(() => {
+              const subs = user.submissions || {}
+              const submittedModuleIds = Object.keys(subs).filter(k => subs[k]?.length)
+              if (!submittedModuleIds.length) {
+                return <p className="text-xs text-gray-400 mt-4">لم يُسلّم هذا المستخدم أي مهمة بعد.</p>
+              }
+              return (
+                <div className="mt-5">
+                  <p className="text-xs font-bold text-gray-500 mb-3">📝 محتوى المهام المُسلّمة:</p>
+                  <div className="space-y-3">
+                    {submittedModuleIds.map(mid => {
+                      const list = subs[mid]
+                      const latest = list[list.length - 1]
+                      const mod = MODULES[mid]
+                      const when = latest.submittedAt ? new Date(latest.submittedAt).toLocaleDateString('ar-EG') : ''
+                      return (
+                        <div key={mid} className="bg-white border border-gray-200 rounded-xl p-3">
+                          <div className="flex items-center justify-between mb-1.5 gap-2">
+                            <span className="text-xs font-bold text-trust-700">
+                              {mod ? `وحدة ${mod.order}: ${mod.title}` : mid}
+                            </span>
+                            <span className="text-[10px] text-gray-400 flex-shrink-0">
+                              {when}{list.length > 1 ? ` · ${list.length} تسليمات` : ''}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap break-words">{latest.content}</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
           </td>
         </tr>
       )}
@@ -140,9 +176,13 @@ function UserRow({ user }) {
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
   const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
   const [authError, setAuthError] = useState('')
   const [users, setUsers] = useState([])
   const [filterDept, setFilterDept] = useState('الكل')
+  const [search, setSearch] = useState('')
+  const [sortKey, setSortKey] = useState('lastActive') // name | department | completed | lastActive
+  const [sortDir, setSortDir] = useState('desc')
 
   const [isOnline, setIsOnline] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -182,14 +222,25 @@ export default function AdminPage() {
           <p className="text-gray-400 text-sm text-center mb-6">ادخل كلمة المرور للمتابعة</p>
 
           <form onSubmit={handleLogin} className="space-y-4">
-            <input
-              type="password"
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-trust-400 text-sm"
-              placeholder="كلمة المرور"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              autoFocus
-            />
+            <div className="relative">
+              <input
+                type={showPw ? 'text' : 'password'}
+                dir="ltr"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 pl-11 text-gray-800 text-left focus:outline-none focus:ring-2 focus:ring-trust-400 text-sm"
+                placeholder="كلمة المرور"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw(v => !v)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                title={showPw ? 'إخفاء' : 'إظهار'}
+              >
+                {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
             {authError && <p className="text-red-500 text-sm text-center">{authError}</p>}
             <button type="submit" className="w-full bg-trust-700 text-white font-bold py-3 rounded-xl hover:bg-trust-800 transition-colors">
               دخول
@@ -213,7 +264,36 @@ export default function AdminPage() {
   ).length
 
   const departments = ['الكل', ...new Set(users.map(u => u.department).filter(Boolean))]
-  const filteredUsers = filterDept === 'الكل' ? users : users.filter(u => u.department === filterDept)
+  const completedOf = (u) => Object.values(u.progress || {}).filter(s => s === 'completed').length
+  const q = search.trim().toLowerCase()
+
+  const filteredUsers = users
+    .filter(u => filterDept === 'الكل' || u.department === filterDept)
+    .filter(u => !q || (u.name || '').toLowerCase().includes(q) || (u.department || '').toLowerCase().includes(q))
+    .slice()
+    .sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1
+      if (sortKey === 'name') return (a.name || '').localeCompare(b.name || '', 'ar') * dir
+      if (sortKey === 'department') return (a.department || '').localeCompare(b.department || '', 'ar') * dir
+      if (sortKey === 'completed') return (completedOf(a) - completedOf(b)) * dir
+      const at = a.lastActive ? new Date(a.lastActive).getTime() : 0
+      const bt = b.lastActive ? new Date(b.lastActive).getTime() : 0
+      return (at - bt) * dir
+    })
+
+  const toggleSort = (key) => {
+    if (sortKey === key) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
+    else { setSortKey(key); setSortDir(key === 'name' || key === 'department' ? 'asc' : 'desc') }
+  }
+
+  const columns = [
+    { label: 'الاسم', key: 'name' },
+    { label: 'القسم', key: 'department' },
+    { label: 'الوحدات', key: 'completed' },
+    { label: 'التقدم', key: null },
+    { label: 'آخر نشاط', key: 'lastActive' },
+    { label: '', key: null },
+  ]
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
@@ -273,6 +353,18 @@ export default function AdminPage() {
           ))}
         </div>
 
+        {/* Search */}
+        <div className="relative">
+          <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="ابحث بالاسم أو القسم..."
+            className="w-full bg-white border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-trust-400"
+          />
+        </div>
+
         {/* Filter */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-bold text-gray-600">تصفية حسب القسم:</span>
@@ -301,8 +393,18 @@ export default function AdminPage() {
               <table className="w-full text-right">
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
-                    {['الاسم', 'القسم', 'الوحدات', 'التقدم', 'آخر نشاط', ''].map((h, i) => (
-                      <th key={i} className="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide">{h}</th>
+                    {columns.map((col, i) => (
+                      <th key={i} className="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide">
+                        {col.key ? (
+                          <button
+                            onClick={() => toggleSort(col.key)}
+                            className={`inline-flex items-center gap-1 hover:text-trust-700 transition-colors ${sortKey === col.key ? 'text-trust-700' : ''}`}
+                          >
+                            {col.label}
+                            <ArrowUpDown size={12} className={sortKey === col.key ? 'opacity-100' : 'opacity-40'} />
+                          </button>
+                        ) : col.label}
+                      </th>
                     ))}
                   </tr>
                 </thead>

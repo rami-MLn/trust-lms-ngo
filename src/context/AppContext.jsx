@@ -41,7 +41,7 @@ async function sbFindUserBy(field, value) {
 // Upsert keyed on the PK (id). Creates the row if missing, updates otherwise —
 // never wipes progress because we always send the full merged map. Optional
 // verified-account columns (phone, email, auth_method) are only sent when set.
-async function sbSaveUser(user, progressMap) {
+async function sbSaveUser(user, progressMap, submissionsMap) {
   if (!supabase) return
   try {
     const payload = {
@@ -54,6 +54,7 @@ async function sbSaveUser(user, progressMap) {
     if (user.phone) payload.phone = user.phone
     if (user.email) payload.email = user.email
     if (user.authMethod) payload.auth_method = user.authMethod
+    if (submissionsMap) payload.submissions = submissionsMap
     await supabase.from('user_registry').upsert(payload, { onConflict: 'id' })
   } catch { /* non-blocking */ }
 }
@@ -283,22 +284,36 @@ export function AppProvider({ children }) {
   }, [progress, user])
 
   const submitTask = useCallback(async ({ moduleId, content, taskTrack }) => {
-    const submission = {
-      id: `sub_${Date.now()}`,
-      moduleId,
-      content,
-      taskTrack,
-      submittedAt: new Date().toISOString(),
-    }
+    const now = new Date().toISOString()
+    const submission = { id: `sub_${Date.now()}`, moduleId, content, taskTrack, submittedAt: now }
     const updatedSubs = {
       ...submissions,
       [moduleId]: [...(submissions[moduleId] || []), submission],
     }
     setSubmissions(updatedSubs)
     localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(updatedSubs))
-    await updateProgress(moduleId, 'completed')
+
+    const updatedProgress = { ...progress, [moduleId]: 'completed' }
+    setProgress(updatedProgress)
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(updatedProgress))
+
+    // Single Supabase write carrying progress AND submission content (for admin view)
+    if (user?.id) await sbSaveUser(user, updatedProgress, updatedSubs)
+
+    // Mirror into local registry (offline fallback) — progress + submissions
+    try {
+      const registry = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]')
+      const idx = registry.findIndex(u => u.id === user?.id)
+      if (idx !== -1) {
+        registry[idx].progress = updatedProgress
+        registry[idx].submissions = updatedSubs
+        registry[idx].lastActive = now
+        localStorage.setItem(REGISTRY_KEY, JSON.stringify(registry))
+      }
+    } catch { /* ignore */ }
+
     return submission
-  }, [submissions, updateProgress])
+  }, [submissions, progress, user])
 
   const getModuleStatus = useCallback((moduleId) => {
     return progress[moduleId] || 'not_started'
