@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 
 const ADMIN_PASSWORD = 'TRUST@admin2026'
 const REGISTRY_KEY = 'trust_lms_registry'
+const ADMIN_AUTH_KEY = 'trust_lms_admin_authed'
 const DEPARTMENTS = Object.keys(DEPARTMENT_CONFIG)
 
 async function getRegistry() {
@@ -402,7 +403,9 @@ function DeleteConfirmModal({ user, onClose, onConfirmed }) {
 }
 
 export default function AdminPage() {
-  const [authed, setAuthed] = useState(false)
+  const [authed, setAuthed] = useState(() => {
+    try { return localStorage.getItem(ADMIN_AUTH_KEY) === '1' } catch { return false }
+  })
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [authError, setAuthError] = useState('')
@@ -436,6 +439,7 @@ export default function AdminPage() {
     if (password === ADMIN_PASSWORD) {
       setAuthed(true)
       setAuthError('')
+      try { localStorage.setItem(ADMIN_AUTH_KEY, '1') } catch { /* ignore */ }
     } else {
       setAuthError('كلمة المرور غير صحيحة')
     }
@@ -567,7 +571,7 @@ export default function AdminPage() {
             تصدير CSV
           </button>
           <button
-            onClick={() => setAuthed(false)}
+            onClick={() => { setAuthed(false); try { localStorage.removeItem(ADMIN_AUTH_KEY) } catch { /* ignore */ } }}
             className="p-2 rounded-xl hover:bg-white/10 transition-colors"
             title="خروج"
           >
