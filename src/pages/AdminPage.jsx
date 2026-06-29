@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Lock, Users, TrendingUp, Download, RefreshCw, ChevronDown, ChevronUp, LogOut, Shield, Wifi, WifiOff, Eye, EyeOff, Search, ArrowUpDown } from 'lucide-react'
+import { Lock, Users, TrendingUp, Download, RefreshCw, ChevronDown, ChevronUp, LogOut, Shield, Wifi, WifiOff, Eye, EyeOff, Search, ArrowUpDown, Plus, Pencil, Trash2, X, Save, Loader, AlertTriangle } from 'lucide-react'
 import { MODULES_LIST, MODULES } from '../data/modules'
+import { DEPARTMENT_CONFIG } from '../data/departments'
 import { supabase } from '../lib/supabase'
 
 const ADMIN_PASSWORD = 'TRUST@admin2026'
 const REGISTRY_KEY = 'trust_lms_registry'
+const DEPARTMENTS = Object.keys(DEPARTMENT_CONFIG)
 
 async function getRegistry() {
   // Try Supabase first — source tells the UI whether data is really remote
@@ -34,6 +36,72 @@ async function getRegistry() {
   } catch {
     return { source: 'local', users: [] }
   }
+}
+
+// ─── Account CRUD ─────────────────────────────────────────────────────────────
+// All three keep the local registry (offline fallback) in sync, and write to
+// Supabase when it's reachable so changes propagate to every device.
+function localUpsert(entry) {
+  try {
+    const reg = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]')
+    const idx = reg.findIndex(u => u.id === entry.id)
+    if (idx === -1) reg.push(entry); else reg[idx] = { ...reg[idx], ...entry }
+    localStorage.setItem(REGISTRY_KEY, JSON.stringify(reg))
+  } catch { /* ignore */ }
+}
+
+function localRemove(id) {
+  try {
+    const reg = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]')
+    localStorage.setItem(REGISTRY_KEY, JSON.stringify(reg.filter(u => u.id !== id)))
+  } catch { /* ignore */ }
+}
+
+async function createUser(fields) {
+  const now = new Date().toISOString()
+  const id = `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+  const row = {
+    id,
+    name: fields.name.trim(),
+    department: fields.department.trim(),
+    phone: fields.phone?.trim() || null,
+    email: fields.email?.trim() || null,
+    auth_method: 'manual',
+    progress: {},
+    submissions: {},
+    last_active: now,
+    created_at: now,
+  }
+  if (supabase) {
+    const { error } = await supabase.from('user_registry').insert(row)
+    if (error) return { ok: false, error: error.message }
+  }
+  localUpsert({ ...row, lastActive: now })
+  return { ok: true }
+}
+
+async function updateUser(id, fields) {
+  const patch = {
+    name: fields.name.trim(),
+    department: fields.department.trim(),
+    phone: fields.phone?.trim() || null,
+    email: fields.email?.trim() || null,
+  }
+  if (supabase) {
+    const { error } = await supabase.from('user_registry').update(patch).eq('id', id)
+    if (error) return { ok: false, error: error.message }
+  }
+  localUpsert({ id, ...patch })
+  return { ok: true }
+}
+
+async function deleteUser(id) {
+  if (supabase) {
+    const { error } = await supabase.from('user_registry').delete().eq('id', id)
+    if (error) return { ok: false, error: error.message }
+  }
+  localRemove(id)
+  return { ok: true }
 }
 
 function exportCSV(users) {
@@ -71,7 +139,7 @@ function ProgressBar({ pct, color = 'bg-trust-600' }) {
   )
 }
 
-function UserRow({ user }) {
+function UserRow({ user, onEdit, onDelete }) {
   const [expanded, setExpanded] = useState(false)
   const progress = user.progress || {}
   const completed = Object.values(progress).filter(s => s === 'completed').length
@@ -113,6 +181,28 @@ function UserRow({ user }) {
       {expanded && (
         <tr className="bg-gray-50 border-b border-gray-100">
           <td colSpan={6} className="px-6 py-4">
+            {/* Account actions + contact details */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-4 border-b border-gray-200">
+              <div className="text-xs text-gray-500 space-y-0.5">
+                {user.phone && <p>📱 {user.phone}</p>}
+                {user.email && <p>✉️ {user.email}</p>}
+                {!user.phone && !user.email && <p className="text-gray-400">لا توجد بيانات تواصل</p>}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onEdit?.(user) }}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-trust-700 bg-white border border-trust-200 px-3 py-1.5 rounded-lg hover:bg-trust-50 transition-colors"
+                >
+                  <Pencil size={13} /> تعديل
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete?.(user) }}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 bg-white border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 size={13} /> حذف
+                </button>
+              </div>
+            </div>
             <p className="text-xs font-bold text-gray-500 mb-3">تفاصيل التقدم لكل وحدة:</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
               {MODULES_LIST.map(m => {
@@ -173,6 +263,126 @@ function UserRow({ user }) {
   )
 }
 
+// Create / edit account modal. `user` null = create mode, object = edit mode.
+function UserFormModal({ user, onClose, onSaved }) {
+  const isEdit = !!user
+  const [name, setName] = useState(user?.name || '')
+  const [department, setDepartment] = useState(user?.department || DEPARTMENTS[0])
+  const [phone, setPhone] = useState(user?.phone || '')
+  const [email, setEmail] = useState(user?.email || '')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!name.trim()) { setError('الاسم مطلوب'); return }
+    if (!department.trim()) { setError('القسم مطلوب'); return }
+    setError(''); setSaving(true)
+    const fields = { name, department, phone, email }
+    const res = isEdit ? await updateUser(user.id, fields) : await createUser(fields)
+    setSaving(false)
+    if (res.ok) onSaved()
+    else setError(res.error || 'تعذّر حفظ الحساب')
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" dir="rtl" onClick={onClose}>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-extrabold text-trust-800">
+            {isEdit ? 'تعديل الحساب' : 'إضافة حساب جديد'}
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X size={20} /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">الاسم *</label>
+            <input
+              type="text" value={name} onChange={e => setName(e.target.value)} autoFocus
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-trust-400"
+              placeholder="الاسم الكامل"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">القسم *</label>
+            <select
+              value={department} onChange={e => setDepartment(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-trust-400"
+            >
+              {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">رقم الهاتف</label>
+            <input
+              type="tel" value={phone} onChange={e => setPhone(e.target.value)} dir="ltr"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-left focus:outline-none focus:ring-2 focus:ring-trust-400"
+              placeholder="+970…"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">البريد الإلكتروني</label>
+            <input
+              type="email" value={email} onChange={e => setEmail(e.target.value)} dir="ltr"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-left focus:outline-none focus:ring-2 focus:ring-trust-400"
+              placeholder="name@example.com"
+            />
+          </div>
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 border border-gray-200 text-gray-600 font-bold py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+              إلغاء
+            </button>
+            <button type="submit" disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-trust-700 text-white font-bold py-2.5 rounded-xl hover:bg-trust-800 transition-colors disabled:opacity-60">
+              {saving ? <Loader size={16} className="animate-spin" /> : <Save size={16} />}
+              {isEdit ? 'حفظ التعديلات' : 'إنشاء الحساب'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// Delete confirmation modal.
+function DeleteConfirmModal({ user, onClose, onConfirmed }) {
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleDelete = async () => {
+    setError(''); setDeleting(true)
+    const res = await deleteUser(user.id)
+    setDeleting(false)
+    if (res.ok) onConfirmed()
+    else setError(res.error || 'تعذّر حذف الحساب')
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" dir="rtl" onClick={onClose}>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center" onClick={e => e.stopPropagation()}>
+        <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <AlertTriangle size={28} className="text-red-500" />
+        </div>
+        <h3 className="text-lg font-extrabold text-gray-800 mb-2">حذف الحساب؟</h3>
+        <p className="text-sm text-gray-500 mb-1">
+          سيتم حذف حساب <span className="font-bold text-gray-700">{user.name}</span> نهائياً مع كل تقدّمه ومهامه المُسلّمة.
+        </p>
+        <p className="text-xs text-red-500 mb-5">لا يمكن التراجع عن هذا الإجراء.</p>
+        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 border border-gray-200 text-gray-600 font-bold py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+            إلغاء
+          </button>
+          <button onClick={handleDelete} disabled={deleting} className="flex-1 inline-flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-2.5 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-60">
+            {deleting ? <Loader size={16} className="animate-spin" /> : <Trash2 size={16} />}
+            حذف نهائي
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
   const [password, setPassword] = useState('')
@@ -186,6 +396,10 @@ export default function AdminPage() {
 
   const [isOnline, setIsOnline] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  // CRUD modals: editUser = null (closed) | {} (create) | user (edit); deleteUser = user | null
+  const [formUser, setFormUser] = useState(undefined) // undefined = closed, null = create, object = edit
+  const [delUser, setDelUser] = useState(null)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -321,6 +535,13 @@ export default function AdminPage() {
             <RefreshCw size={18} />
           </button>
           <button
+            onClick={() => setFormUser(null)}
+            className="flex items-center gap-2 bg-white text-trust-800 hover:bg-trust-50 px-3 py-2 rounded-xl text-sm font-bold transition-colors"
+          >
+            <Plus size={16} />
+            إضافة مستخدم
+          </button>
+          <button
             onClick={() => exportCSV(users)}
             className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
           >
@@ -409,7 +630,9 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((u, i) => <UserRow key={i} user={u} />)}
+                  {filteredUsers.map((u) => (
+                    <UserRow key={u.id} user={u} onEdit={setFormUser} onDelete={setDelUser} />
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -422,6 +645,22 @@ export default function AdminPage() {
             : '⚠️ تعذّر الاتصال بقاعدة البيانات — يعرض مستخدمي هذا الجهاز فقط'}
         </p>
       </div>
+
+      {/* CRUD modals */}
+      {formUser !== undefined && (
+        <UserFormModal
+          user={formUser}
+          onClose={() => setFormUser(undefined)}
+          onSaved={() => { setFormUser(undefined); refresh() }}
+        />
+      )}
+      {delUser && (
+        <DeleteConfirmModal
+          user={delUser}
+          onClose={() => setDelUser(null)}
+          onConfirmed={() => { setDelUser(null); refresh() }}
+        />
+      )}
     </div>
   )
 }
